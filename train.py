@@ -57,6 +57,7 @@ bias = False # do we use bias inside LayerNorm and Linear layers?
 # adamw optimizer
 learning_rate = 6e-4 # max learning rate
 max_iters = 600000 # total number of training iterations
+max_time = 96 * 60 * 60 # 96 hours
 weight_decay = 1e-1
 beta1 = 0.9
 beta2 = 0.95
@@ -249,9 +250,11 @@ if wandb_log and master_process:
 # training loop
 X, Y = get_batch('train') # fetch the very first batch
 t0 = time.time()
+start_time = time.time()
 local_iter_num = 0 # number of iterations in the lifetime of this process
 raw_model = model.module if ddp else model # unwrap DDP container if needed
 running_mfu = -1.0
+print(f"max time: {max_time/60} minutes, {max_time/3600} hours")
 while True:
 
     # determine and set the learning rate for this iteration
@@ -329,7 +332,7 @@ while True:
     local_iter_num += 1
 
     # termination conditions
-    if iter_num > max_iters:
+    if iter_num > max_iters or time.time() - start_time > max_time:
         break
 
 if ddp:
